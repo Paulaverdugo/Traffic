@@ -43,13 +43,27 @@ class CityModel(Model):
                     elif col == "#":
                         agent = Obstacle(f"ob_{r*self.width+c}", self)
                         self.grid.place_agent(agent, (c, self.height - r - 1))
+                        self.schedule.add(agent)
 
                     elif col == "D":
                         agent = Destination(f"d_{r*self.width+c}", self)
                         self.grid.place_agent(agent, (c, self.height - r - 1))
+                        self.schedule.add(agent)
 
         self.num_agents = N
         self.running = True
+
+
+
+        # Añadir un Car en la posición inferior izquierda
+        start_pos = (0, 0)  # Asume que (0, 0) es la esquina inferior izquierda
+        car = Car("car_0", self)
+        self.grid.place_agent(car, start_pos)
+        self.schedule.add(car)
+
+        destinations = [agent for agent in self.schedule.agents if isinstance(agent, Destination)]
+        # print("Número de destinos:", len(destinations))
+
 
     def step(self):
         '''Advance the model by one step.'''
