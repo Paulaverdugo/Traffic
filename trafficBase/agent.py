@@ -63,15 +63,24 @@ class Car(Agent):
 
         # Imprimir la ruta generada
         print("Ruta generada por A*:", path)
-        print(grid.grid_str(path=path, start=start, end=end))
+        # print(grid.grid_str(path=path, start=start, end=end))
 
 
-        # Mover a la siguiente posición en el camino
+       # Mover a la siguiente posición en el camino si hay uno y no está bloqueado
         if path and len(path) > 1:
-            next_position = path[1]  # El segundo elemento es el siguiente paso
+            next_node = path[1]  # El segundo elemento es el siguiente paso
+            next_position = (next_node.x, next_node.y)
+            
+            # Comprobar si hay un semáforo en la próxima posición
+            next_contents = self.model.grid.get_cell_list_contents(next_position)
+            traffic_light = next((agent for agent in next_contents if isinstance(agent, Traffic_Light)), None)
+            
+            # Detenerse si hay un semáforo en rojo
+            if traffic_light and not traffic_light.state:  # state = False significa luz roja
+                return
+
+            # Mover el agente a la siguiente posición si no hay semáforo o está en verde
             self.model.grid.move_agent(self, next_position)
-
-
 
 
     def choose_random_destination(self):
