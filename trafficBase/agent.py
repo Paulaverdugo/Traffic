@@ -1,106 +1,103 @@
 from pathfinding.core.diagonal_movement import DiagonalMovement
-from pathfinding.core.grid import Grid
+from pathfinding.core.graph import Graph
 from pathfinding.finder.a_star import AStarFinder
+from pathfinding.core.node import Node
+import heapq
 from mesa import Agent
 import random
+
 
 class Car(Agent):
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
-        self.destination = self.choose_random_destination()  
+        self.destination = self.choose_random_destination()
+        
 
 
     def move(self):
-        
+        start_id = self.pos[1] * self.model.grid.width + self.pos[0]
+        end_id = self.destination[1] * self.model.grid.width + self.destination[0]
+        print(f"Moving from {start_id} to {end_id}")
 
-        # Convertir la cuadrícula de Mesa a una cuadrícula para A*
-        grid_matrix = []
-        for y in range(self.model.grid.height):
-            row = []
-            for x in range(self.model.grid.width):
-                cell_contents = self.model.grid.get_cell_list_contents((x, y))
-                obstacle = any(isinstance(agent, Obstacle) for agent in cell_contents)
-                row.append(0 if obstacle else 1)
-            grid_matrix.append(row)
+        path = self.a_star(start_id, end_id)
+        print(f"Car {self.unique_id} path: {path}")  # Imprimir camino encontrado
 
-    
-        grid = Grid(matrix=grid_matrix)  # Crear el objeto Grid
-
-        # print("Matriz del Grid:")
-        # for row in grid_matrix:
-        #     print(' '.join(str(cell) for cell in row))
-
-
-        # Iniciar y destino fijo
-        start = grid.node(*self.pos)
-        end = grid.node(self.destination[0],self.destination[1])
-
-
-        # print("Coche esta en:")
-        # print(self.pos[1])
-        # print(self.pos[0])
-        # print("Destino esta en:")
-        # print(self.destination[1])
-        # print(self.destination[0])
-
-
-         # Asegúrate de que tanto start como end no estén en obstáculos
-        # if grid_matrix[self.pos[1]][self.pos[0]] == 0:
-        #     print("El inicio está en un obstáculo")
-        # if grid_matrix[self.destination[1]][self.destination[0]] == 0:
-        #     print("El destino está en un obstáculo")
-        #     return
-
-
-
-        # A* Finder
-        finder = AStarFinder(diagonal_movement=DiagonalMovement.never)
-        path, _ = finder.find_path(start, end, grid)
- 
-        for node in path:
-            print(f"{node.x} , {node.y}", end=" - ")
-
-
-        # Imprimir la ruta generada
-        print("Ruta generada por A*:", path)
-        # print(grid.grid_str(path=path, start=start, end=end))
-
-
-       # Mover a la siguiente posición en el camino si hay uno y no está bloqueado
         if path and len(path) > 1:
-            next_node = path[1]  # El segundo elemento es el siguiente paso
-            next_position = (next_node.x, next_node.y)
+            next_node_id = path[1]
+            next_position = (next_node_id % self.model.grid.width, next_node_id // self.model.grid.width)
             
             # Comprobar si hay un semáforo en la próxima posición
             next_contents = self.model.grid.get_cell_list_contents(next_position)
             traffic_light = next((agent for agent in next_contents if isinstance(agent, Traffic_Light)), None)
             
             # Detenerse si hay un semáforo en rojo
-            if traffic_light and not traffic_light.state:  # state = False significa luz roja
+            if traffic_light and not traffic_light.state:
                 return
 
             # Mover el agente a la siguiente posición si no hay semáforo o está en verde
             self.model.grid.move_agent(self, next_position)
 
 
+
+
+    def a_star(self, start, goal):
+        print(f"Starting A* from {start} to {goal}")
+        def heuristic(node, goal):
+            x1, y1 = divmod(node, self.model.grid.width)
+            x2, y2 = divmod(goal, self.model.grid.width)
+            return abs(x1 - x2) + abs(y1 - y2)  # Distancia Manhattan
+
+        open_set = []
+        heapq.heappush(open_set, (0, start))
+        came_from = {start: None}
+        g_score = {start: 0}
+        
+        while open_set:
+            
+            current = heapq.heappop(open_set)[1]
+            print(f"Current node: {current}")
+
+            if current == goal:
+                path = []
+                while current in came_from:
+                    path.append(current)
+                    current = came_from[current]
+                    print(f"Path found: {path[::-1]}")
+                return path[::-1]
+
+            for neighbor in self.model.graph.get(current, []):
+                print(f"Checking neighbor: {neighbor}")
+                tentative_g_score = g_score[current] + 1
+                if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g_score
+                    f_score = tentative_g_score + heuristic(neighbor, goal)
+                    heapq.heappush(open_set, (f_score, neighbor))
+        print("No path found")
+        return None
+    
+    # def print_grid_identifiers(self):
+    #     for y in range(self.model.grid.height):
+    #         for x in range(self.model.grid.width):
+    #             cell_id = y * self.model.grid.width + x
+    #             print(f"Cell ({x}, {y}) has ID: {cell_id}", end='  ')
+    #         print()  # Nueva línea después de cada fila
+
+
     def choose_random_destination(self):
-        destinations = [agent.pos for agent in self.model.schedule.agents 
-                        if isinstance(agent, Destination)]
-        # print("Destinos disponibles:", destinations)  # Para depuración
+        destinations = [agent.pos for agent in self.model.schedule.agents if isinstance(agent, Destination)]
         chosen_destination = random.choice(destinations) if destinations else None
-        print("Destino elegido:", chosen_destination)  # Nueva línea de depuración
+        print("Destino elegido:", chosen_destination)  # Imprimir destino elegido
         return chosen_destination
 
-
-
+    
     def step(self):
         self.move()
         if self.pos == self.destination:
-            self.model.running = False  # Detiene la simulación
+            self.model.grid.remove_agent(self)  # Elimina el agente
+            self.model.schedule.remove(self)    # Elimina el agente del schedule
 
 
-
-            
 
 class Traffic_Light(Agent):
     """
@@ -125,6 +122,8 @@ class Traffic_Light(Agent):
         """
         if self.model.schedule.steps % self.timeToChange == 0:
             self.state = not self.state
+
+        # coom este pero para los coches
 
 class Destination(Agent):
     """

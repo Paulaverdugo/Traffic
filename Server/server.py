@@ -5,73 +5,61 @@
 from flask import Flask, request, jsonify
 from randomAgents.model import RandomModel
 from randomAgents.agent import RandomAgent, ObstacleAgent
+from flask import Flask, request, jsonify
+from traffic_model import TrafficModel  # Asegúrate de que este importe corresponda a tu modelo
+from traffic_agent import Car, TrafficLight  # Importa las clases de tus agentes
 
-# Size of the board:
+# Configuración inicial del modelo:
 number_agents = 10
 width = 28
 height = 28
-randomModel = None
+trafficModel = None
 currentStep = 0
 
-app = Flask("Traffic example")
+app = Flask("Traffic Simulation")
 
 @app.route('/init', methods=['GET', 'POST'])
 def initModel():
-    global currentStep, randomModel, number_agents, width, height
+    global currentStep, trafficModel, number_agents, width, height
 
     if request.method == 'POST':
         number_agents = int(request.form.get('NAgents'))
         width = int(request.form.get('width'))
         height = int(request.form.get('height'))
         currentStep = 0
-
-        print(request.form)
-        print(number_agents, width, height)
-        randomModel = RandomModel(number_agents, width, height)
-
-        return jsonify({"message":"Parameters recieved, model initiated."})
+        trafficModel = TrafficModel(number_agents, width, height)
+        return jsonify({"message": "Model initialized with custom parameters."})
     elif request.method == 'GET':
-        number_agents = 10
-        width = 30
-        height = 30
-        currentStep = 0
-        randomModel = RandomModel(number_agents, width, height)
+        trafficModel = TrafficModel(number_agents, width, height)
+        return jsonify({"message": "Model initialized with default parameters."})
 
-        return jsonify({"message":"Default parameters recieved, model initiated."})
+@app.route('/getTrafficLights', methods=['GET'])
+def getTrafficLights():
+    global trafficModel
 
+    if request.method == 'GET':
+        trafficLightStates = [{"id": str(tl.unique_id), "state": tl.state}
+                              for tl in trafficModel.traffic_lights]
+        return jsonify({'trafficLights': trafficLightStates})
 
 @app.route('/getAgents', methods=['GET'])
 def getAgents():
-    global randomModel
+    global trafficModel
 
     if request.method == 'GET':
-        agentPositions = [{"id": str(a.unique_id), "x": x, "y":1, "z":z}
-                          for a, (x, z) in randomModel.grid.coord_iter()
-                          if isinstance(a, RandomAgent)]
-
-        return jsonify({'positions':agentPositions})
-
-
-@app.route('/getObstacles', methods=['GET'])
-def getObstacles():
-    global randomModel
-
-    if request.method == 'GET':
-        carPositions = [{"id": str(a.unique_id), "x": x, "y":1, "z":z}
-                        for a, (x, z) in randomModel.grid.coord_iter()
-                        if isinstance(a, ObstacleAgent)]
-
-        return jsonify({'positions':carPositions})
-
+        agentPositions = [{"id": str(a.unique_id), "x": a.pos[0], "y": a.pos[1]}
+                          for a in trafficModel.schedule.agents
+                          if isinstance(a, Car)]
+        return jsonify({'agents': agentPositions})
 
 @app.route('/update', methods=['GET'])
 def updateModel():
-    global currentStep, randomModel
+    global currentStep, trafficModel
+
     if request.method == 'GET':
-        randomModel.step()
+        trafficModel.step()
         currentStep += 1
-        return jsonify({'message':f'Model updated to step {currentStep}.', 'currentStep':currentStep})
+        return jsonify({'message': f'Model updated to step {currentStep}.', 'currentStep': currentStep})
 
-
-if __name__=='__main__':
+if __name__ == '__main__':
     app.run(host="localhost", port=8585, debug=True)
