@@ -3,11 +3,11 @@
 # Octavio Navarro. October 2023git
 
 from flask import Flask, request, jsonify
-from randomAgents.model import RandomModel
-from randomAgents.agent import RandomAgent, ObstacleAgent
-from flask import Flask, request, jsonify
-from traffic_model import TrafficModel  # Asegúrate de que este importe corresponda a tu modelo
-from traffic_agent import Car, TrafficLight  # Importa las clases de tus agentes
+from model import CityModel
+from agent import Car, Traffic_Light, Destination, Obstacle, Road
+# from flask import Flask, request, jsonify
+# from traffic_model import TrafficModel  # Asegúrate de que este importe corresponda a tu modelo
+# from traffic_agent import Car, TrafficLight  # Importa las clases de tus agentes
 
 # Configuración inicial del modelo:
 number_agents = 10
@@ -27,10 +27,10 @@ def initModel():
         width = int(request.form.get('width'))
         height = int(request.form.get('height'))
         currentStep = 0
-        trafficModel = TrafficModel(number_agents, width, height)
+        trafficModel = CityModel(number_agents)
         return jsonify({"message": "Model initialized with custom parameters."})
     elif request.method == 'GET':
-        trafficModel = TrafficModel(number_agents, width, height)
+        trafficModel = CityModel(number_agents)
         return jsonify({"message": "Model initialized with default parameters."})
 
 @app.route('/getTrafficLights', methods=['GET'])
@@ -47,7 +47,7 @@ def getAgents():
     global trafficModel
 
     if request.method == 'GET':
-        agentPositions = [{"id": str(a.unique_id), "x": a.pos[0], "y": a.pos[1]}
+        agentPositions = [{"id": str(a.unique_id), "x": a.pos[0], "y": 0, "z": a.pos[1]}
                           for a in trafficModel.schedule.agents
                           if isinstance(a, Car)]
         return jsonify({'agents': agentPositions})

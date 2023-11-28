@@ -6,13 +6,10 @@ import heapq
 from mesa import Agent
 import random
 
-
 class Car(Agent):
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
         self.destination = self.choose_random_destination()
-        
-
 
     def move(self):
         start_id = self.pos[1] * self.model.grid.width + self.pos[0]
@@ -20,16 +17,18 @@ class Car(Agent):
         print(f"Moving from {start_id} to {end_id}")
 
         path = self.a_star(start_id, end_id)
-        print(f"Car {self.unique_id} path: {path}")  # Imprimir camino encontrado
+        print(f"Car {self.unique_id} path: {path}")
 
-        if path and len(path) > 1:
+        if path is None or len(path) <= 1:
+            self.remove_self()  # Elimina el coche si no hay camino
+        else:
             next_node_id = path[1]
             next_position = (next_node_id % self.model.grid.width, next_node_id // self.model.grid.width)
-            
+
             # Comprobar si hay un semáforo en la próxima posición
             next_contents = self.model.grid.get_cell_list_contents(next_position)
             traffic_light = next((agent for agent in next_contents if isinstance(agent, Traffic_Light)), None)
-            
+
             # Detenerse si hay un semáforo en rojo
             if traffic_light and not traffic_light.state:
                 return
@@ -37,7 +36,19 @@ class Car(Agent):
             # Mover el agente a la siguiente posición si no hay semáforo o está en verde
             self.model.grid.move_agent(self, next_position)
 
+            if self.is_position_occupied(next_position):
+                print(f"Car {self.unique_id} stopped to avoid collision at {next_position}")
+            # Aquí puedes decidir detener el coche o buscar una ruta alternativa
+                return
 
+            # Mover el coche si la posición está libre
+            self.model.grid.move_agent(self, next_position)
+
+
+    def is_position_occupied(self, next_position):
+        """ Verifica si la posición dada está ocupada por otro coche. """
+        contents = self.model.grid.get_cell_list_contents(next_position)
+        return any(isinstance(content, Car) and content != self for content in contents)
 
 
     def a_star(self, start, goal):
@@ -76,6 +87,11 @@ class Car(Agent):
         print("No path found")
         return None
     
+    def remove_self(self):
+        """Elimina el coche del grid y del schedule."""
+        self.model.grid.remove_agent(self)
+        self.model.schedule.remove(self)
+    
     # def print_grid_identifiers(self):
     #     for y in range(self.model.grid.height):
     #         for x in range(self.model.grid.width):
@@ -91,11 +107,17 @@ class Car(Agent):
         return chosen_destination
 
     
+    # def step(self):
+    #     self.move()
+    #     if self.pos == self.destination:
+    #         self.model.grid.remove_agent(self)  # Elimina el agente
+    #         self.model.schedule.remove(self)    # Elimina el agente del schedule
+
     def step(self):
         self.move()
         if self.pos == self.destination:
-            self.model.grid.remove_agent(self)  # Elimina el agente
-            self.model.schedule.remove(self)    # Elimina el agente del schedule
+            self.remove_self()
+
 
 
 

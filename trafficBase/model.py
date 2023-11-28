@@ -14,7 +14,7 @@ class CityModel(Model):
         self.traffic_lights = []
 
         # Load the map file. Each character in the map file represents an agent.
-        with open('city_files/2022_base.txt') as baseFile:
+        with open('city_files/2023_base.txt') as baseFile:
             lines = baseFile.readlines()
             self.width = len(lines[0]) - 1
             self.height = len(lines)
