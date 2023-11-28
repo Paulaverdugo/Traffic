@@ -82,7 +82,7 @@ class CityModel(Model):
         self.schedule.step()
 
         # Add a new car every 15 steps
-        if self.schedule.steps % 15 == 0:
+        if self.schedule.steps % 4 == 0:
             new_car_id = f"car_{self.car_counter}"
             self.car_counter += 1
 
