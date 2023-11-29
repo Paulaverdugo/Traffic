@@ -10,6 +10,7 @@ class Car(Agent):
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
         self.destination = self.choose_random_destination()
+        self.path = None
 
     def move(self):
         start_id = self.pos[1] * self.model.grid.width + self.pos[0]

@@ -58,16 +58,30 @@ class CityModel(Model):
         # Initialize a counter for car IDs
         self.car_counter = 0
 
+
         # Add the first car in a random corner
         start_pos = random.choice([(0, 0), (0, self.height - 1), (self.width - 1, 0), (self.width - 1, self.height - 1)])
-        car = Car(f"car_{self.car_counter}", self)
-        self.grid.place_agent(car, start_pos)
-        self.schedule.add(car)
-        self.car_counter += 1
-
-        # Use the imported graph
+        
         self.graph_list = graph_list
         self.graph = self.build_graph(self.graph_list)
+        
+        # Add cars
+        added = False
+
+        while not added:
+            car = Car(f"car_{self.car_counter}", self)
+            self.grid.place_agent(car, start_pos)
+            start_id = car.pos[1] * car.model.grid.width + car.pos[0]
+            end_id = car.destination[1] * car.model.grid.width + car.destination[0]
+            path = car.a_star(start_id, end_id)
+            if path != None and len(path) > 0:
+                car.path = path
+                self.schedule.add(car)
+                self.car_counter += 1
+                added = True
+            else:
+                self.grid.remove_agent(car)
+        
 
     def build_graph(self, graph_list):
         graph = {}
@@ -84,11 +98,21 @@ class CityModel(Model):
         # Add a new car every 15 steps
         if self.schedule.steps % 4 == 0:
             new_car_id = f"car_{self.car_counter}"
-            self.car_counter += 1
 
-            new_car = Car(new_car_id, self)
+            added = False
             start_pos = random.choice([(0, 0), (0, self.height - 1), (self.width - 1, 0), (self.width - 1, self.height - 1)])
-            self.grid.place_agent(new_car, start_pos)
-            self.schedule.add(new_car)
 
+            while not added:
+                car = Car(f"car_{self.car_counter}", self)
+                self.grid.place_agent(car, start_pos)
+                start_id = car.pos[1] * car.model.grid.width + car.pos[0]
+                end_id = car.destination[1] * car.model.grid.width + car.destination[0]
+                path = car.a_star(start_id, end_id)
+                if path != None and len(path) > 0:
+                    car.path = path
+                    self.schedule.add(car)
+                    self.car_counter += 1
+                    added = True
+                else:
+                    self.grid.remove_agent(car)
 # Rest of your server.py file remains the same

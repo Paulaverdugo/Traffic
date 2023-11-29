@@ -23,9 +23,12 @@ def initModel():
     global currentStep, trafficModel, number_agents, width, height
 
     if request.method == 'POST':
-        number_agents = int(request.form.get('NAgents'))
-        width = int(request.form.get('width'))
-        height = int(request.form.get('height'))
+        number_agents = 0
+        try:
+            number_agents = int(request.form.get('NAgents'))
+        except:
+            number_agents = 1
+            
         currentStep = 0
         trafficModel = CityModel(number_agents)
         return jsonify({"message": "Model initialized with custom parameters."})
