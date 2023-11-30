@@ -13,6 +13,7 @@ class CityModel(Model):
 
         self.traffic_lights = []
 
+
         # Load the map file. Each character in the map file represents an agent.
         with open('city_files/2023_base.txt') as baseFile:
             lines = baseFile.readlines()
@@ -91,9 +92,15 @@ class CityModel(Model):
             graph[start].append(end)
         return graph
 
+
+    
     def step(self):
         ''' Advance the model by one step. '''
         self.schedule.step()
+
+        agent_count = self.count_agents()
+        # print(f"Número actual de carros en la simulación: {agent_count}")
+
 
         # Add a new car every 15 steps
         if self.schedule.steps % 4 == 0:
@@ -115,4 +122,9 @@ class CityModel(Model):
                     added = True
                 else:
                     self.grid.remove_agent(car)
+
+    def count_agents(self):
+        """ Cuenta el número total de agentes tipo Car en el modelo. """
+        return len([agent for agent in self.schedule.agents if isinstance(agent, Car)])
+
 # Rest of your server.py file remains the same

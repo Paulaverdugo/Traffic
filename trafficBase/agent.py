@@ -15,10 +15,10 @@ class Car(Agent):
     def move(self):
         start_id = self.pos[1] * self.model.grid.width + self.pos[0]
         end_id = self.destination[1] * self.model.grid.width + self.destination[0]
-        print(f"Moving from {start_id} to {end_id}")
+        # print(f"Moving from {start_id} to {end_id}")
 
         path = self.a_star(start_id, end_id)
-        print(f"Car {self.unique_id} path: {path}")
+        # print(f"Car {self.unique_id} path: {path}")
 
         if path is None or len(path) <= 1:
             self.remove_self()  # Elimina el coche si no hay camino
@@ -30,20 +30,29 @@ class Car(Agent):
             next_contents = self.model.grid.get_cell_list_contents(next_position)
             traffic_light = next((agent for agent in next_contents if isinstance(agent, Traffic_Light)), None)
 
-            # Detenerse si hay un semáforo en rojo
-            if traffic_light and not traffic_light.state:
+            # Comprobar si la próxima posición está ocupada por otro carro
+            is_occupied = self.is_position_occupied(next_position)
+
+            # Detenerse si hay un semáforo en rojo o la próxima posición está ocupada
+            if traffic_light and not traffic_light.state or is_occupied:
                 return
 
             # Mover el agente a la siguiente posición si no hay semáforo o está en verde
             self.model.grid.move_agent(self, next_position)
 
+            
             if self.is_position_occupied(next_position):
-                print(f"Car {self.unique_id} stopped to avoid collision at {next_position}")
-            # Aquí puedes decidir detener el coche o buscar una ruta alternativa
-                return
+                # print(f"Car {self.unique_id} stopped to avoid collision at {next_position}")
+                return  # Detiene el movimiento del carro si la próxima posición está ocupada
 
-            # Mover el coche si la posición está libre
             self.model.grid.move_agent(self, next_position)
+            
+            # def is_position_occupied(self, next_position):
+            #     """ Verifica si la posición dada está ocupada por otro coche. """
+            #     contents = self.model.grid.get_cell_list_contents(next_position)
+            #     return any(isinstance(content, Car) and content != self for content in contents)
+
+
 
 
     def is_position_occupied(self, next_position):
@@ -53,7 +62,7 @@ class Car(Agent):
 
 
     def a_star(self, start, goal):
-        print(f"Starting A* from {start} to {goal}")
+        # print(f"Starting A* from {start} to {goal}")
         def heuristic(node, goal):
             x1, y1 = divmod(node, self.model.grid.width)
             x2, y2 = divmod(goal, self.model.grid.width)
@@ -67,25 +76,25 @@ class Car(Agent):
         while open_set:
             
             current = heapq.heappop(open_set)[1]
-            print(f"Current node: {current}")
+            # print(f"Current node: {current}")
 
             if current == goal:
                 path = []
                 while current in came_from:
                     path.append(current)
                     current = came_from[current]
-                    print(f"Path found: {path[::-1]}")
+                    # print(f"Path found: {path[::-1]}")
                 return path[::-1]
 
             for neighbor in self.model.graph.get(current, []):
-                print(f"Checking neighbor: {neighbor}")
+                # print(f"Checking neighbor: {neighbor}")
                 tentative_g_score = g_score[current] + 1
                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g_score
                     f_score = tentative_g_score + heuristic(neighbor, goal)
                     heapq.heappush(open_set, (f_score, neighbor))
-        print("No path found")
+        # print("No path found")
         return None
     
     def remove_self(self):
@@ -104,7 +113,7 @@ class Car(Agent):
     def choose_random_destination(self):
         destinations = [agent.pos for agent in self.model.schedule.agents if isinstance(agent, Destination)]
         chosen_destination = random.choice(destinations) if destinations else None
-        print("Destino elegido:", chosen_destination)  # Imprimir destino elegido
+        # print("Destino elegido:", chosen_destination)  # Imprimir destino elegido
         return chosen_destination
 
     

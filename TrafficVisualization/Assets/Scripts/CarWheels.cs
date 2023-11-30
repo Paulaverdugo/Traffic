@@ -8,6 +8,18 @@ public class CarWheels : MonoBehaviour
     private bool started = false;
     public float angle;
 
+    //New
+    private Vector3 destination;
+    private bool hasArrived = false;
+    private float arrivalThreshold = 0.5f;
+
+
+    public void SetDestination(Vector3 newDestination)
+    {
+        destination = newDestination;
+        hasArrived = false;
+    }
+    
     // Start is called before the first frame update
     public void Start(){
         if (!started) {
@@ -75,8 +87,3 @@ public class CarWheels : MonoBehaviour
     //     moveTime = time;
     // }
 }
-
-
-
-
-

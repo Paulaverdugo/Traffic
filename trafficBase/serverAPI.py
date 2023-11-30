@@ -1,13 +1,12 @@
-# TC2008B. Sistemas Multiagentes y Gráficas Computacionales
-# Python flask server to interact with Unity. Based on the code provided by Sergio Ruiz.
-# Octavio Navarro. October 2023git
-
 from flask import Flask, request, jsonify
 from model import CityModel
 from agent import Car, Traffic_Light, Destination, Obstacle, Road
-# from flask import Flask, request, jsonify
-# from traffic_model import TrafficModel  # Asegúrate de que este importe corresponda a tu modelo
-# from traffic_agent import Car, TrafficLight  # Importa las clases de tus agentes
+import requests
+import json
+
+# Configuración inicial del modelo y otras definiciones...
+app = Flask("Traffic Simulation")
+
 
 # Configuración inicial del modelo:
 number_agents = 10
@@ -16,7 +15,55 @@ height = 28
 trafficModel = None
 currentStep = 0
 
-app = Flask("Traffic Simulation")
+@app.route('/post_car_count', methods=['GET'])
+def post_car_count():
+    global trafficModel
+
+    # Contar el número de coches en la simulación
+    num_cars = len([a for a in trafficModel.schedule.agents if isinstance(a, Car)])
+
+    # Datos a enviar
+    data = {
+        "year": 2023,
+        "classroom": 302,
+        "name": "Equipo2",
+        "num_cars": num_cars
+    }
+
+    # URL del endpoint externo
+    url = "http://52.1.3.19:8585/api/validate_attempt"
+
+    # Realizar el POST al endpoint externo
+    response = requests.post(url, json=data)
+
+    # Crear una respuesta para esta solicitud
+    return jsonify({"message": "Data posted", "response": response.json(), "status_code": response.status_code})
+
+
+@app.route('/validate_attempt', methods=['POST'])
+def validate_attempt():
+    global trafficModel
+
+    data = request.get_json()
+    data["num_cars"] = len([a for a in trafficModel.schedule.agents if isinstance(a, Car)])
+
+    # External API URL and endpoint
+    url = "http://localhost:5000/api/"
+    endpoint = "validate_attempt"
+
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    # Sending the data to the external API
+    response = requests.post(url+endpoint, data=json.dumps(data), headers=headers)
+
+    # Create a response for the POST request
+    if response.status_code == 200:
+        return jsonify({"message": "Request successful", "response": response.json()})
+    else:
+        return jsonify({"message": "Request failed", "status_code": response.status_code})
+
 
 @app.route('/init', methods=['GET', 'POST'])
 def initModel():
@@ -66,3 +113,5 @@ def updateModel():
 
 if __name__ == '__main__':
     app.run(host="localhost", port=8585, debug=True)
+
+    
