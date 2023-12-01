@@ -76,7 +76,7 @@ public class AgentController : MonoBehaviour
         timer (float): The timer to update the simulation.
         dt (float): The delta time.
     */
-    string serverUrl = "http://localhost:8585";
+    string serverUrl = "http://localhost:8583";
     string getAgentsEndpoint = "/getAgents";
     string sendConfigEndpoint = "/init";
     string updateEndpoint = "/update";
@@ -206,7 +206,7 @@ public class AgentController : MonoBehaviour
             // Once the data has been received, it is stored in the agentsData variable.
             // Then, it iterates over the agentsData.agents list to update the agents positions.
             agentsData = JsonUtility.FromJson<AgentsData>(www.downloadHandler.text);
-
+            Debug.Log(www.downloadHandler.text);
             foreach(AgentData agent in agentsData.agents)
             {
                 Vector3 newAgentPosition = new Vector3(agent.x, agent.y, agent.z);

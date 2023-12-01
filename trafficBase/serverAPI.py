@@ -1,3 +1,4 @@
+# old
 from flask import Flask, request, jsonify
 from model import CityModel
 from agent import Car, Traffic_Light, Destination, Obstacle, Road
@@ -112,6 +113,6 @@ def updateModel():
         return jsonify({'message': f'Model updated to step {currentStep}.', 'currentStep': currentStep})
 
 if __name__ == '__main__':
-    app.run(host="localhost", port=8585, debug=True)
+    app.run(host="localhost", port=8583, debug=True)
 
     
